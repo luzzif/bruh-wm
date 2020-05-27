@@ -1,4 +1,4 @@
-#include <gtk-3.0/gdk/gdk.h>
+#include <gdk/gdk.h>
 #include "../includes/events.h"
 
 void bruh_handle_events() {
@@ -10,6 +10,14 @@ void bruh_handle_events() {
         switch(gdk_event_get_event_type(event)) {
             case GDK_BUTTON_PRESS: {
                 printf("clicked\n");
+                break;
+            }
+            case GDK_MAP: {
+                printf("mapped\n");
+                break;
+            }
+            case GDK_UNMAP: {
+                printf("unmapped\n");
                 break;
             }
         }
