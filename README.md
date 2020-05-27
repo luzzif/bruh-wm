@@ -1,6 +1,6 @@
 # Bruh WM
 
-A lightweight and performant window manager made width GDK/GTK.
+A lightweight window manager made width GDK/GTK.
 
 ## Setup and running
 
