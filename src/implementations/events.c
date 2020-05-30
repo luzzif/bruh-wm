@@ -7,11 +7,11 @@ void bruh_handle_events() {
         if(!event) {
             continue;
         }
-        switch(gdk_event_get_event_type(event)) {
-            case GDK_BUTTON_PRESS: {
-                printf("clicked\n");
-                break;
-            }
+        GdkEventType event_type = gdk_event_get_event_type(event);
+        if(event_type < 0) {
+            continue;
+        }
+        switch(event_type) {
             case GDK_MAP: {
                 printf("mapped\n");
                 break;
