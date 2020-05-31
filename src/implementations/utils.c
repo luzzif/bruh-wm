@@ -1,3 +1,4 @@
+#include <math.h>
 #include "../includes/utils.h"
 
 void bruh_get_geometry_checked(
@@ -26,4 +27,8 @@ void bruh_get_geometry_checked(
         printf("could not get geometry for window\n");
         exit(1);
     } 
+}
+
+double bruh_degrees_to_radians(int degrees) {
+    return degrees * (M_PI / 180.);
 }

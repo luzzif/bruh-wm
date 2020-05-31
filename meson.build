@@ -11,5 +11,5 @@ sources = [
 executable(
     'bruh-wm',
     sources: sources,
-    dependencies: [dependency('x11')]
+    dependencies: [dependency('x11'), dependency('cairo')]
 )

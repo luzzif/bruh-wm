@@ -16,5 +16,6 @@ void bruh_get_geometry_checked(
     unsigned int *border_width, 
     unsigned int *depth
 );
+double bruh_degrees_to_radians(int degrees);
 
 #endif
