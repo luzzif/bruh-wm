@@ -1,20 +1,16 @@
 #include <stdio.h>
-#include <gdk/gdk.h>
 #include <X11/Xlib.h>
 #include <unistd.h>
 #include "../includes/events.h"
 
 int main(int argc, char **argv) {
-    if(!gdk_init_check((gint *) &argc, (gchar ***) &argv)) {
+    Display *display = XOpenDisplay(NULL);
+    if(display == NULL) {
         printf("could not initialize gdk\n");
         return 1;
     }
-    GdkDisplay *display = gdk_display_get_default();
-    if(!display) {
-        printf("could not get display\n");
-        return 1;
-    }
-    GdkWindow *root_window = gdk_get_default_root_window();
-    gdk_window_set_events(root_window, GDK_SUBSTRUCTURE_MASK);
-    bruh_handle_events();
+    Window root_window = XDefaultRootWindow(display);
+    int default_screen = DefaultScreen(display);
+    XSelectInput(display, root_window, SubstructureRedirectMask);
+    bruh_handle_events(display, default_screen);
 }
