@@ -9,5 +9,6 @@ void bruh_handle_map(
     int default_screen,
     XMapRequestEvent *event
 );
+void bruh_handle_button1_motion(Display *display, XMotionEvent *event);
 
 #endif

@@ -20,6 +20,10 @@ void bruh_handle_events(Display *display, int default_screen) {
                 );
                 break;
             }
+            case MotionNotify: {
+                bruh_handle_button1_motion(display, (XMotionEvent *) &event);
+                break;
+            }
         }
     }
 }
@@ -56,6 +60,7 @@ void bruh_handle_map(
         0,
         0
     );
+    XSelectInput(display, parent, Button1MotionMask);
     XReparentWindow(
         display,
         child,
@@ -78,7 +83,7 @@ void bruh_handle_map(
         cairo,
         parent_width - TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
         TOOLBAR_FRAME_BORDER_RADIUS,
-        bruh_degrees_to_radiants(270), 0
+        bruh_degrees_to_radians(270), 0
     );
     cairo_line_to(cairo, parent_width, parent_height);
     cairo_line_to(cairo, 0, parent_height);
@@ -87,9 +92,30 @@ void bruh_handle_map(
         cairo,
         TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
         TOOLBAR_FRAME_BORDER_RADIUS,
-        bruh_degrees_to_radiants(180), bruh_degrees_to_radiants(270)
+        bruh_degrees_to_radians(180), bruh_degrees_to_radians(270)
     );
     cairo_set_source_rgb(cairo, 1, 0, 0);
     cairo_fill(cairo);
     XFlush(display);
+}
+
+void bruh_handle_button1_motion(Display *display, XMotionEvent *event) {
+    Window window = event->window;
+    int x;
+    int y;
+    unsigned int width;
+    unsigned int height;
+    unsigned int border_width;
+    unsigned int depth;
+    Window root_window;
+    bruh_get_geometry_checked(
+        display,
+        window,
+        &root_window,
+        &x, &y,
+        &width, &height,
+        &border_width,
+        &depth
+    );
+    XMoveWindow(display, window, event->x, event->y);
 }
