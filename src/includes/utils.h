@@ -16,6 +16,12 @@ void bruh_get_geometry_checked(
     unsigned int *border_width, 
     unsigned int *depth
 );
+void bruh_get_window_dimensions(
+    Display *display,
+    Drawable window,
+    unsigned int *width,
+    unsigned int *height
+);
 double bruh_degrees_to_radians(int degrees);
 
 #endif

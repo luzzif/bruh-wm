@@ -12,5 +12,10 @@ void bruh_handle_map(
 void bruh_handle_button_press(Display *display, XButtonPressedEvent *event);
 void bruh_handle_button_release(Display *display);
 void bruh_handle_pointer_motion(Display *display, XMotionEvent *event);
+void bruh_handle_expose(
+    Display *display,
+    int default_screen,
+    XExposeEvent *event
+);
 
 #endif

@@ -43,6 +43,14 @@ void bruh_handle_events(Display *display, int default_screen) {
                 bruh_handle_pointer_motion(display, (XMotionEvent *) event);
                 break;
             }
+            case Expose: {
+                bruh_handle_expose(
+                    display,
+                    default_screen,
+                    (XExposeEvent *) event
+                );
+                break;
+            }
         }
         free(event);
     }
@@ -78,7 +86,7 @@ void bruh_handle_map(
         parent_width, parent_height,
         0, 0, 0
     );
-    XSelectInput(display, parent, ButtonPressMask);
+    XSelectInput(display, parent, ButtonPressMask | ExposureMask);
     XReparentWindow(
         display,
         child,
@@ -88,32 +96,6 @@ void bruh_handle_map(
     );
     XMapWindow(display, parent);
     XMapWindow(display, child);
-    cairo_surface_t *cairo_surface = cairo_xlib_surface_create(
-        display,
-        parent,
-        XDefaultVisual(display, default_screen),
-        parent_width, parent_height
-    );
-    cairo_t *cairo = cairo_create(cairo_surface);
-    cairo_move_to(cairo, TOOLBAR_FRAME_BORDER_RADIUS, 0);
-    cairo_line_to(cairo, parent_width - TOOLBAR_FRAME_BORDER_RADIUS, 0);
-    cairo_arc(
-        cairo,
-        parent_width - TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
-        TOOLBAR_FRAME_BORDER_RADIUS,
-        bruh_degrees_to_radians(270), 0
-    );
-    cairo_line_to(cairo, parent_width, parent_height);
-    cairo_line_to(cairo, 0, parent_height);
-    cairo_line_to(cairo, 0, TOOLBAR_FRAME_BORDER_RADIUS);
-    cairo_arc(
-        cairo,
-        TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
-        TOOLBAR_FRAME_BORDER_RADIUS,
-        bruh_degrees_to_radians(180), bruh_degrees_to_radians(270)
-    );
-    cairo_set_source_rgb(cairo, 1, 0, 0);
-    cairo_fill(cairo);
     bruh_client *new_client = (bruh_client *) malloc(sizeof(bruh_client));
     if(new_client == NULL) {
         printf("could not allocate new client: out of memory\n");
@@ -164,7 +146,6 @@ void bruh_handle_button_press(Display *display, XButtonPressedEvent *event) {
 }
 
 void bruh_handle_button_release(Display *display) {
-    printf("releaseiiiiing\n");
     XUngrabPointer(display, CurrentTime);
 }
 
@@ -182,4 +163,45 @@ void bruh_handle_pointer_motion(Display *display, XMotionEvent *event) {
         event->x_root - frame->click_event->x,
         event->y_root - frame->click_event->y
     );
+}
+
+// TODO: the window is fully redrawn every time... this needs to be changed
+void bruh_handle_expose(Display *display, int default_screen, XExposeEvent *event) {
+    Window window = event->window;
+    bruh_client *client = bruh_get_client_by_frame(window);
+    if(!client) {
+        return;
+    }
+    unsigned int width;
+    unsigned int height;
+    bruh_get_window_dimensions(display, window, &width, &height);
+    cairo_surface_t *cairo_surface = cairo_xlib_surface_create(
+        display,
+        window,
+        XDefaultVisual(display, default_screen),
+        width, height
+    );
+    cairo_t *cairo = cairo_create(cairo_surface);
+    cairo_move_to(cairo, TOOLBAR_FRAME_BORDER_RADIUS, 0);
+    cairo_line_to(cairo, width - TOOLBAR_FRAME_BORDER_RADIUS, 0);
+    cairo_arc(
+        cairo,
+        width - TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
+        TOOLBAR_FRAME_BORDER_RADIUS,
+        bruh_degrees_to_radians(270), 0
+    );
+    cairo_line_to(cairo, width, height);
+    cairo_line_to(cairo, 0, height);
+    cairo_line_to(cairo, 0, TOOLBAR_FRAME_BORDER_RADIUS);
+    cairo_arc(
+        cairo,
+        TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
+        TOOLBAR_FRAME_BORDER_RADIUS,
+        bruh_degrees_to_radians(180), bruh_degrees_to_radians(270)
+    );
+    cairo_clip(cairo);
+    cairo_set_source_rgb(cairo, 1, 0, 0);
+    cairo_paint(cairo);
+    cairo_destroy(cairo);
+    cairo_surface_destroy(cairo_surface);
 }

@@ -2,10 +2,11 @@
 #define BRUH_CLIENTS_H
 
 #include <X11/Xlib.h>
-#include <stdbool.h>
+#include <cairo/cairo.h>
 
 typedef struct {
     Window window;
+    cairo_surface_t *cairo_surface;
     XButtonPressedEvent *click_event;
 } bruh_frame;
 
