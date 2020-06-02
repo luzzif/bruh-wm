@@ -5,6 +5,8 @@ sources = [
     'src/implementations/events.c',
     'src/includes/utils.h',
     'src/implementations/utils.c',
+    'src/includes/clients.h',
+    'src/implementations/clients.c',
 
     'src/implementations/main.c'
 ]

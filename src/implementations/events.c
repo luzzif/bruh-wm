@@ -1,30 +1,50 @@
 #include <X11/Xlib.h>
 #include <cairo/cairo-xlib.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "../includes/events.h"
 #include "../includes/utils.h"
+#include "../includes/clients.h"
 
 #define TOOLBAR_FRAME_BORDER_SIZE 28
-#define TOOLBAR_FRAME_BORDER_RADIUS 16
+#define TOOLBAR_FRAME_BORDER_RADIUS 8
 #define THIN_FRAME_BORDER_SIZE 1
 
 void bruh_handle_events(Display *display, int default_screen) {
     while(1) {
-        XEvent event;
-        XNextEvent(display, &event);
-        switch(event.type) {
+        XEvent *event = (XEvent *) malloc(sizeof(XEvent));
+        if(event == NULL) {
+            printf("could not get next event: out of memory\n");
+            exit(1);
+        }
+        XNextEvent(display, event);
+        switch(event->type) {
             case MapRequest: {
                 bruh_handle_map(
                     display,
                     default_screen,
-                    (XMapRequestEvent *) &event
+                    (XMapRequestEvent *) event
                 );
                 break;
             }
+            case ButtonPress: {
+                bruh_handle_button_press(
+                    display,
+                    (XButtonPressedEvent *) event
+                );
+                break;
+            }
+            case ButtonRelease: {
+                bruh_handle_button_release(display);
+                break;
+            }
             case MotionNotify: {
-                bruh_handle_button1_motion(display, (XMotionEvent *) &event);
+                bruh_handle_pointer_motion(display, (XMotionEvent *) event);
                 break;
             }
         }
+        free(event);
     }
 }
 
@@ -56,11 +76,9 @@ void bruh_handle_map(
         root_window,
         x, y,
         parent_width, parent_height,
-        0,
-        0,
-        0
+        0, 0, 0
     );
-    XSelectInput(display, parent, Button1MotionMask);
+    XSelectInput(display, parent, ButtonPressMask);
     XReparentWindow(
         display,
         child,
@@ -96,26 +114,72 @@ void bruh_handle_map(
     );
     cairo_set_source_rgb(cairo, 1, 0, 0);
     cairo_fill(cairo);
-    XFlush(display);
+    bruh_client *new_client = (bruh_client *) malloc(sizeof(bruh_client));
+    if(new_client == NULL) {
+        printf("could not allocate new client: out of memory\n");
+        exit(1);
+    }
+    bruh_frame *new_frame = new_client->frame; 
+    new_frame = (bruh_frame *) malloc(sizeof(bruh_frame));
+    if(new_frame == NULL) {
+        printf("could not allocate new frame struct: out of memory\n");
+        exit(1);
+    }
+    new_frame->window = parent;
+    bruh_add_client(new_client);
 }
 
-void bruh_handle_button1_motion(Display *display, XMotionEvent *event) {
+void bruh_handle_button_press(Display *display, XButtonPressedEvent *event) {
     Window window = event->window;
-    int x;
-    int y;
-    unsigned int width;
-    unsigned int height;
-    unsigned int border_width;
-    unsigned int depth;
-    Window root_window;
-    bruh_get_geometry_checked(
+    if(window == None) {
+        return;
+    }
+    bruh_client *client = bruh_get_client_by_frame(window);
+    client->frame->click_event = 
+            (XButtonPressedEvent *) malloc(sizeof(XButtonPressedEvent));
+    if(client->frame->click_event == NULL) {
+        printf("could not allocate copied event: out of memory\n");
+        exit(1);
+    }
+    memcpy(client->frame->click_event, event, sizeof(XButtonPressedEvent));
+    switch(event->button) {
+        case 1: {
+            if(!client) {
+                return;
+            }
+            XGrabPointer(
+                display,
+                window,
+                False,
+                PointerMotionMask | ButtonReleaseMask,
+                GrabModeAsync,
+                GrabModeAsync,
+                None,
+                None,
+                CurrentTime
+            );
+            break;
+        }
+    }
+}
+
+void bruh_handle_button_release(Display *display) {
+    printf("releaseiiiiing\n");
+    XUngrabPointer(display, CurrentTime);
+}
+
+
+void bruh_handle_pointer_motion(Display *display, XMotionEvent *event) {
+    Window window = event->window;
+    bruh_client *client = bruh_get_client_by_frame(window);
+    if(!client) {
+        return;
+    }
+    bruh_frame *frame = client->frame;
+    XMoveWindow(
         display,
         window,
-        &root_window,
-        &x, &y,
-        &width, &height,
-        &border_width,
-        &depth
+        event->x_root - frame->click_event->x,
+        event->y_root - frame->click_event->y
     );
-    XMoveWindow(display, window, event->x, event->y);
 }
