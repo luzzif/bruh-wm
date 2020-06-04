@@ -35,8 +35,12 @@ void bruh_handle_events(Display *display, int default_screen) {
                 );
                 break;
             }
-            case ButtonRelease: {
+            case ButtonRelease: {   
                 bruh_handle_button_release(display);
+                break;
+            }
+            case UnmapNotify: {
+                bruh_handle_unmap(display, (XUnmapEvent *) event);
                 break;
             }
             case MotionNotify: {
@@ -101,6 +105,7 @@ void bruh_handle_map(
         printf("could not allocate new client: out of memory\n");
         exit(1);
     }
+    new_client->child = child;
     bruh_frame *new_frame = new_client->frame; 
     new_frame = (bruh_frame *) malloc(sizeof(bruh_frame));
     if(new_frame == NULL) {
@@ -204,4 +209,16 @@ void bruh_handle_expose(Display *display, int default_screen, XExposeEvent *even
     cairo_paint(cairo);
     cairo_destroy(cairo);
     cairo_surface_destroy(cairo_surface);
+}
+
+void bruh_handle_unmap(Display *display, XUnmapEvent *event) {
+    Window window = event->window;
+    // TODO: consider implement an is_client_registered helper function
+    bruh_client *client = bruh_get_client_by_child(window);
+    if(!client) {
+        return;
+    }
+    printf("the client was found\n");
+    XDestroyWindow(display, client->frame->window);
+    bruh_remove_client(client);
 }

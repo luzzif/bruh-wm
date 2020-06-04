@@ -17,5 +17,6 @@ void bruh_handle_expose(
     int default_screen,
     XExposeEvent *event
 );
+void bruh_handle_unmap(Display *display, XUnmapEvent *event);
 
 #endif
