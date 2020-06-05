@@ -14,6 +14,8 @@ typedef struct {
 typedef struct {
     bruh_frame *frame;
     Window child;
+    unsigned int width;
+    unsigned int height;
 } bruh_client;
 
 typedef struct {
