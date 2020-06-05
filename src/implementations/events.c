@@ -81,7 +81,7 @@ void bruh_handle_map(
         &border_width,
         &depth
     );
-    unsigned int parent_width = width + THIN_FRAME_BORDER_SIZE *2; 
+    unsigned int parent_width = width + THIN_FRAME_BORDER_SIZE * 2; 
     unsigned int parent_height = height + THIN_FRAME_BORDER_SIZE + TOOLBAR_FRAME_BORDER_SIZE; 
     Window parent = XCreateSimpleWindow(
         display,
@@ -100,19 +100,49 @@ void bruh_handle_map(
     );
     XMapWindow(display, parent);
     XMapWindow(display, child);
+
+    // clipping drawn window region: the actual drawing will be handled on expose.
+    cairo_surface_t *cairo_surface = cairo_xlib_surface_create(
+        display,
+        parent,
+        XDefaultVisual(display, default_screen),
+        parent_width, parent_height
+    );
+    cairo_t *cairo = cairo_create(cairo_surface);
+    cairo_move_to(cairo, TOOLBAR_FRAME_BORDER_RADIUS, 0);
+    cairo_line_to(cairo, parent_width - TOOLBAR_FRAME_BORDER_RADIUS, 0);
+    cairo_arc(
+        cairo,
+        parent_width - TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
+        TOOLBAR_FRAME_BORDER_RADIUS,
+        bruh_degrees_to_radians(270), 0
+    );
+    cairo_line_to(cairo, parent_width, parent_height);
+    cairo_line_to(cairo, 0, parent_height);
+    cairo_line_to(cairo, 0, TOOLBAR_FRAME_BORDER_RADIUS);
+    cairo_arc(
+        cairo,
+        TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
+        TOOLBAR_FRAME_BORDER_RADIUS,
+        bruh_degrees_to_radians(180), bruh_degrees_to_radians(270)
+    );
+    cairo_clip(cairo);
+
+    // adding client to state list
     bruh_client *new_client = (bruh_client *) malloc(sizeof(bruh_client));
     if(new_client == NULL) {
         printf("could not allocate new client: out of memory\n");
         exit(1);
     }
     new_client->child = child;
-    bruh_frame *new_frame = new_client->frame; 
-    new_frame = (bruh_frame *) malloc(sizeof(bruh_frame));
-    if(new_frame == NULL) {
+    new_client->frame = (bruh_frame *) malloc(sizeof(bruh_frame));
+    if(new_client->frame == NULL) {
         printf("could not allocate new frame struct: out of memory\n");
         exit(1);
     }
-    new_frame->window = parent;
+    new_client->frame->window = parent;
+    new_client->frame->cairo_surface = cairo_surface;
+    new_client->frame->cairo = cairo;
     bruh_add_client(new_client);
 }
 
@@ -170,45 +200,16 @@ void bruh_handle_pointer_motion(Display *display, XMotionEvent *event) {
     );
 }
 
-// TODO: the window is fully redrawn every time... this needs to be changed
 void bruh_handle_expose(Display *display, int default_screen, XExposeEvent *event) {
     Window window = event->window;
     bruh_client *client = bruh_get_client_by_frame(window);
     if(!client) {
         return;
     }
-    unsigned int width;
-    unsigned int height;
-    bruh_get_window_dimensions(display, window, &width, &height);
-    cairo_surface_t *cairo_surface = cairo_xlib_surface_create(
-        display,
-        window,
-        XDefaultVisual(display, default_screen),
-        width, height
-    );
-    cairo_t *cairo = cairo_create(cairo_surface);
-    cairo_move_to(cairo, TOOLBAR_FRAME_BORDER_RADIUS, 0);
-    cairo_line_to(cairo, width - TOOLBAR_FRAME_BORDER_RADIUS, 0);
-    cairo_arc(
-        cairo,
-        width - TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
-        TOOLBAR_FRAME_BORDER_RADIUS,
-        bruh_degrees_to_radians(270), 0
-    );
-    cairo_line_to(cairo, width, height);
-    cairo_line_to(cairo, 0, height);
-    cairo_line_to(cairo, 0, TOOLBAR_FRAME_BORDER_RADIUS);
-    cairo_arc(
-        cairo,
-        TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
-        TOOLBAR_FRAME_BORDER_RADIUS,
-        bruh_degrees_to_radians(180), bruh_degrees_to_radians(270)
-    );
-    cairo_clip(cairo);
+    cairo_t *cairo = client->frame->cairo;
+    cairo_rectangle(cairo, event->x, event->y, event->width, event->height);
     cairo_set_source_rgb(cairo, 1, 0, 0);
     cairo_paint(cairo);
-    cairo_destroy(cairo);
-    cairo_surface_destroy(cairo_surface);
 }
 
 void bruh_handle_unmap(Display *display, XUnmapEvent *event) {
@@ -218,7 +219,6 @@ void bruh_handle_unmap(Display *display, XUnmapEvent *event) {
     if(!client) {
         return;
     }
-    printf("the client was found\n");
     XDestroyWindow(display, client->frame->window);
     bruh_remove_client(client);
 }

@@ -40,6 +40,8 @@ void bruh_remove_client(bruh_client *old_client) {
         exit(1);
     }
     previous_node->next = current_node->next;
+    cairo_destroy(current_node->data->frame->cairo);
+    cairo_surface_destroy(current_node->data->frame->cairo_surface);
     free(current_node);
 }
 
@@ -59,7 +61,6 @@ bruh_client *bruh_get_client_by_frame(Window frame) {
 bruh_client *bruh_get_client_by_child(Window child) {
     bruh_node *node = clients;
     while(node) {
-        printf("node data: %lu", node->data->frame->window);
         if(node->data && 
             node->data->child && 
             node->data->child == child) {
