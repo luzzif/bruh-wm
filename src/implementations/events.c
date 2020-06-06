@@ -4,10 +4,8 @@
 #include <string.h>
 #include "../includes/events.h"
 #include "../includes/utils.h"
-
-#define TOOLBAR_FRAME_BORDER_SIZE 28
-#define TOOLBAR_FRAME_BORDER_RADIUS 8
-#define THIN_FRAME_BORDER_SIZE 2
+#include "../includes/constants.h"
+#include "../includes/cursor.h"
 
 // TODO: consider predefinig the cursor variants and not creating them every time
 void bruh_handle_events(Display *display, int default_screen) {
@@ -167,25 +165,11 @@ void bruh_handle_button_press(Display *display, XButtonPressedEvent *event) {
         exit(1);
     }
     memcpy(frame->click_event, event, sizeof(XButtonPressedEvent));
-    bruh_setup_clicked_client_cursor(display, event, client);
-}
-
-void bruh_setup_clicked_client_cursor(
-        Display *display,
-        XButtonPressedEvent *event,
-        bruh_client *client) {
-    int x_position = event->x;
-    int y_position = event->y;
-    int client_width = client->width;
-    // FIXME: this code is duplicated in the motion handler
-    if((y_position <= TOOLBAR_FRAME_BORDER_RADIUS &&
-        x_position > TOOLBAR_FRAME_BORDER_RADIUS &&  
-        x_position < client_width - TOOLBAR_FRAME_BORDER_RADIUS) ||
-        (y_position > TOOLBAR_FRAME_BORDER_RADIUS &&
-        y_position <= TOOLBAR_FRAME_BORDER_SIZE &&
-        x_position > THIN_FRAME_BORDER_SIZE &&  
-        x_position < client_width - THIN_FRAME_BORDER_SIZE)) {
-        XDefineCursor(display, client->frame->window, XCreateFontCursor(display, 60));
+    switch (event->button) {
+        case 1: {
+            bruh_setup_frame_button1_press_cursor(display, event, client);
+            break;
+        }
     }
 }
 
@@ -194,12 +178,9 @@ void bruh_handle_button_release(Display *display, XButtonReleasedEvent *event) {
     if(!client) {
         return;
     }
-    // if a registered client's frame was clicked, reset any previously set click events
     client->frame->click_event = NULL;
-    // reset any particular cursor
-    XDefineCursor(display, client->frame->window, XCreateFontCursor(display, 68));
+    bruh_setup_standard_cursor(display, client->frame->window);
 }
-
 
 void bruh_handle_pointer_motion(Display *display, XMotionEvent *event) {
     Window window = event->window;
@@ -219,44 +200,7 @@ void bruh_handle_pointer_motion(Display *display, XMotionEvent *event) {
         );
     } else {
         // free motion, no previous click on the client's frame
-        int y_position = event->y;
-        int x_position = event->x;
-        // FIXME: need to find a better solution for this mess
-        if(y_position <= TOOLBAR_FRAME_BORDER_RADIUS) {
-            Cursor cursor;
-            if(x_position < TOOLBAR_FRAME_BORDER_RADIUS) {
-                cursor = XCreateFontCursor(display, 134);
-            } else if(x_position >= TOOLBAR_FRAME_BORDER_RADIUS && 
-                x_position <=  client->width - TOOLBAR_FRAME_BORDER_RADIUS) {
-                cursor = XCreateFontCursor(display, 138);
-            } else if(x_position > client->width - TOOLBAR_FRAME_BORDER_RADIUS) {
-                cursor = XCreateFontCursor(display, 136);
-            } else {
-                cursor = XCreateFontCursor(display, 68);
-            }
-            XDefineCursor(display, client->frame->window, cursor);
-        } else if(y_position > TOOLBAR_FRAME_BORDER_RADIUS && 
-            y_position < client->height - THIN_FRAME_BORDER_SIZE) {
-            Cursor cursor;
-            if(x_position < THIN_FRAME_BORDER_SIZE / 2) {
-                cursor = XCreateFontCursor(display, 70);
-            } else if(x_position >= client->width - THIN_FRAME_BORDER_SIZE / 2) {
-                cursor = XCreateFontCursor(display, 96);
-            } else {
-                cursor = XCreateFontCursor(display, 68);
-            }
-            XDefineCursor(display, client->frame->window, cursor);
-        } else if(y_position >= client->height - THIN_FRAME_BORDER_SIZE / 2) {
-            Cursor cursor;
-            if(x_position < THIN_FRAME_BORDER_SIZE / 2) {
-                cursor = XCreateFontCursor(display, 12);
-            } else if(x_position >= client->width - THIN_FRAME_BORDER_SIZE / 2) {
-                cursor = XCreateFontCursor(display, 14);
-            } else {
-                cursor = XCreateFontCursor(display, 16);
-            }
-            XDefineCursor(display, client->frame->window, cursor);
-        }
+        bruh_setup_frame_pointer_motion_cursor(display, event, client);
     }
 }
 
