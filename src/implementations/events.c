@@ -6,6 +6,7 @@
 #include "../includes/utils.h"
 #include "../includes/constants.h"
 #include "../includes/cursor.h"
+#include "../includes/ui.h"
 
 // TODO: consider predefinig the cursor variants and not creating them every time
 void bruh_handle_events(Display *display, int default_screen) {
@@ -101,7 +102,6 @@ void bruh_handle_map(
     XMapWindow(display, parent);
     XMapWindow(display, child);
 
-    // clipping drawn window region: the actual drawing will be handled on expose.
     cairo_surface_t *cairo_surface = cairo_xlib_surface_create(
         display,
         parent,
@@ -109,24 +109,7 @@ void bruh_handle_map(
         parent_width, parent_height
     );
     cairo_t *cairo = cairo_create(cairo_surface);
-    cairo_move_to(cairo, TOOLBAR_FRAME_BORDER_RADIUS, 0);
-    cairo_line_to(cairo, parent_width - TOOLBAR_FRAME_BORDER_RADIUS, 0);
-    cairo_arc(
-        cairo,
-        parent_width - TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
-        TOOLBAR_FRAME_BORDER_RADIUS,
-        bruh_degrees_to_radians(270), 0
-    );
-    cairo_line_to(cairo, parent_width, parent_height);
-    cairo_line_to(cairo, 0, parent_height);
-    cairo_line_to(cairo, 0, TOOLBAR_FRAME_BORDER_RADIUS);
-    cairo_arc(
-        cairo,
-        TOOLBAR_FRAME_BORDER_RADIUS, TOOLBAR_FRAME_BORDER_RADIUS,
-        TOOLBAR_FRAME_BORDER_RADIUS,
-        bruh_degrees_to_radians(180), bruh_degrees_to_radians(270)
-    );
-    cairo_clip(cairo);
+    bruh_define_frame_structure(display, cairo, parent_width, parent_height);
 
     // adding client to state list
     bruh_client *new_client = (bruh_client *) malloc(sizeof(bruh_client));
@@ -210,10 +193,13 @@ void bruh_handle_expose(Display *display, int default_screen, XExposeEvent *even
     if(!client) {
         return;
     }
-    cairo_t *cairo = client->frame->cairo;
-    cairo_rectangle(cairo, event->x, event->y, event->width, event->height);
-    cairo_set_source_rgb(cairo, 1, 0, 0);
-    cairo_paint(cairo);
+    bruh_draw_frame_portion(
+        client->frame->cairo,
+        event->x,
+        event->y,
+        event->width,
+        event->y
+    );
 }
 
 void bruh_handle_unmap(Display *display, XUnmapEvent *event) {

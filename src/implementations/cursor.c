@@ -1,6 +1,3 @@
-#ifndef BRUH_CURSOR_H
-#define BRUH_CURSOR_H
-
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
 #include <stdbool.h>
@@ -102,5 +99,3 @@ void bruh_setup_frame_pointer_motion_cursor(
     }
     XDefineCursor(display, client->frame->window, required_cursor);
 }
-
-#endif

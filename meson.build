@@ -9,6 +9,8 @@ sources = [
     'src/implementations/clients.c',
     'src/includes/cursor.h',
     'src/implementations/cursor.c',
+    'src/includes/ui.h',
+    'src/implementations/ui.c',
 
     'src/implementations/main.c'
 ]
